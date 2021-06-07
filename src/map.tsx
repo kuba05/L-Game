@@ -13,7 +13,7 @@ interface MapProps {
     mandatoryMoves: number[];
     players: {[index:number]: string|Player};
     playersForMoves: number[];
-    loopback?: (map:Map)=>void;
+    loopback?: (result: number) => void;
 }
 
 
@@ -42,13 +42,9 @@ export class Map extends react.Component<MapProps, MapState>{
     constructor(props: MapProps) {
         super(props);
         this.state = {active: null, error: false, errorMessage: null, move: 0, initialPieceState: null, finished: false};
-        if (props.loopback) {
-            props.loopback(this);
-        }
     }
     
     componentDidMount() {
-    
         //overload rightclick
         window.oncontextmenu = () => {
             if (this.state.active)
@@ -80,10 +76,67 @@ export class Map extends react.Component<MapProps, MapState>{
             this.setState({errorMessage: null});
         
         //if a move has been made, check if any legal move exists
-        if (this.state.move !== prevState.move)
-            this.setState({finished: !this.doesAnyMoveExist()});
+        if (this.state.move !== prevState.move) {
+            let isEnd = !this.doesAnyMoveExist();
+            this.setState({finished: isEnd});
+            //and if the loopback is set to a function, we will return who won (winner's index in PlayersForMove)
+            if (isEnd && this.props.loopback) {
+                this.props.loopback(this.props.playersForMoves[this.state.move-1])
+            }
+        }
     }
     
+    
+    /*
+    * AI turn
+    */
+    AITurn = () => {
+        if ("string" === typeof this.props.players[this.props.playersForMoves[this.state.move]]) {
+            return false;
+        }
+        let move = (this.props.players[this.props.playersForMoves[this.state.move]] as Player).makeMove(
+            this.props.pieces.map(piece => this.getPieceState(piece))
+        );
+        if (!this.checkIfMoveIsLegal(this.props.moveOrder[this.state.move][0], move[0])) {
+          return false;
+        }
+        this.setPieceState(this.props.moveOrder[this.state.move][0], move[0]);
+        this.forceUpdate();
+        this.setState({move: (this.state.move + 1) % this.props.moveOrder.length});
+        
+        if (!this.checkIfMoveIsLegal(this.props.moveOrder[this.state.move][move[2]], move[1])) {
+          return false;
+        }
+        
+        this.setPieceState(this.props.moveOrder[this.state.move][move[2]], move[1]);
+        this.forceUpdate();
+        this.setState({move: (this.state.move + 1) % this.props.moveOrder.length});;
+        return true;
+    }
+    
+    checkIfMoveIsLegal = (piece: Piece, state: number) => {
+        let testPiece = this.setPieceState(this.makePieceFromData(this.getPieceData(piece)), state);
+        for (let part of testPiece.show()) {
+            //is inside the field?
+            //console.log(part);
+            if (!this.isInside(part[0],part[1])) {
+                return false;
+            }
+            //is there any other piece on the same position?
+            for (let otherPiece of this.props.pieces) {
+                if (otherPiece === piece) {
+                    //console.log("the same piece");
+                    continue;
+                }
+                //console.log("the pieces arent the same");
+                if (otherPiece.show().findIndex(a => JSON.stringify(part) === JSON.stringify(a) ) !== -1) {
+                    return false;
+                }
+                //console.log("this part can be placed");
+            }
+        }
+        return true;
+    }
     
     /*
     * stuff with pieces (might be static)
@@ -127,7 +180,7 @@ export class Map extends react.Component<MapProps, MapState>{
         //first we decode position
         for (let i = 0; i < 2; i++) {
             data[0].push(x % (limits[1]-limits[0]+1) + limits[0]);
-            x = (x - data[0][i])/ (limits[1]-limits[0]+1);
+            x = (x - x % (limits[1]-limits[0]+1))/ (limits[1]-limits[0]+1);
         }
         
         //and now the rotation
@@ -141,7 +194,8 @@ export class Map extends react.Component<MapProps, MapState>{
         //console.log(data)
         //and now we change the inner state of the piece
         piece.setPosition(data[0]);
-        piece.setRotation(data[1])
+        piece.setRotation(data[1]);
+        return piece;
     }
     
     
@@ -197,6 +251,7 @@ export class Map extends react.Component<MapProps, MapState>{
         
         piece.makeLight();
         this.setState({active: piece, initialPieceState: this.getPieceState(piece)});
+        console.log("changed initialPieceState");
         return true;
     }
     
@@ -230,9 +285,10 @@ export class Map extends react.Component<MapProps, MapState>{
         if (!this.state.active || !this.state.initialPieceState) {
             return false;
         }
-        //console.log(this.state);
+        console.log(this.state);
         this.setPieceState(this.state.active, this.state.initialPieceState);
-        //console.log(this.state);
+        console.log(this.state);
+        console.log(this.state.active);
         this.state.active.makeDark();
         this.setState({active: null, initialPieceState: null});
         return true;
@@ -287,56 +343,13 @@ export class Map extends react.Component<MapProps, MapState>{
             for (let y = limits[0]; y <= limits[1]; y++) {
                 for (let r = 0; r < 8; r++) {
                     
-                    //move testPiece to other location
-                    this.setPieceState(testPiece, x + size*y + size**2 *r);
-                    //console.group();
-                    //console.log("x: " + x + "; y: " + y + "; r: " + r);
-                    
-                    //console.log(piece);
-                    //console.log(testPiece);
-                    if (this.getPieceState(piece) === this.getPieceState(testPiece)) {
-                        //console.log("default position")
-                        //console.groupEnd();
+                    if (this.getPieceState(piece) === x + (limits[1]-limits[0]+1)*y + (limits[1]-limits[0]+1)**2 *r) {
                         continue;
                     }
                     
-                    //test, if this position is legal
-                    let canBePlaced = true;
-                    //console.log(testPiece.show());
-                    for (let part of testPiece.show()) {
-                        //return if the piece is already known to not be able to be placed
-                        if (!canBePlaced) {
-                            //console.log("can't be placed");
-                            break;
-                        }
-                        //is inside the field?
-                        //console.log(part);
-                        if (!this.isInside(part[0],part[1])) {
-                            canBePlaced = false;
-                            //console.log("isNotInside");
-                            break;
-                        }
-                        //is there any other piece on the same position?
-                        for (let otherPiece of this.props.pieces) {
-                            if (otherPiece === piece) {
-                                //console.log("the same piece");
-                                continue;
-                            }
-                            //console.log("the pieces arent the same");
-                            if (otherPiece.show().findIndex(a => JSON.stringify(part) === JSON.stringify(a) ) !== -1) {
-                                canBePlaced = false;
-                                //console.log("this part can not be placed");
-                                break;
-                            }
-                            //console.log("this part can be placed");
-                        }
-                    }
-                    //console.log("canBePlaced: " + canBePlaced);
-                    //console.groupEnd();
-                    if (canBePlaced) {
+                    if (this.checkIfMoveIsLegal(piece, x + (limits[1]-limits[0]+1)*y + (limits[1]-limits[0]+1)**2 *r)) {
                         return true;
                     }
-                    
                 }
             }
         }
@@ -433,9 +446,9 @@ export class Map extends react.Component<MapProps, MapState>{
                 <div className="btn-group w-100">
                     <button className="btn btn-primary" disabled={!this.state.active} onClick={() => this.rotateActive(true)}>rotate clockwise</button>
                     <button className="btn btn-primary" disabled={!this.state.active} onClick={() => this.rotateActive(false)}>rotate counterclockwise</button>
-                    <button className="btn btn-primary" disabled={!this.state.active} onClick={() => this.mirrorActive()}> rotate </button>
+                    <button className="btn btn-primary" disabled={!this.state.active} onClick={() => this.mirrorActive()}>rotate</button>         
+                    <button className="btn btn-primary" disabled={!this.state.active} onClick={()=>this.cancelTheMove()}>cancel picing a piece</button>
                     <button className="btn btn-primary" onClick={this.passMove}>pass a move</button>
-                    <button className="btn btn-primary" onClick={()=>this.cancelTheMove()}> cancel picing a piece</button>
                 </div>
             </div>
         );
