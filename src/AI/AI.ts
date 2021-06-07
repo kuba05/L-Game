@@ -9,12 +9,6 @@ console.log(nn.query([0.1020,0.213,0.414,0.2154]));
 
 
 
-
-
-//let map = new Map({})
-
-
-
 export default 1;
 
 
