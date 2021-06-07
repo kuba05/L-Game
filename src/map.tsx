@@ -13,7 +13,7 @@ interface MapProps {
     mandatoryMoves: number[];
     players: {[index:number]: string|Player};
     playersForMoves: number[];
-    loopback?: (result: number) => void;
+    callback?: (result: number) => void;
 }
 
 
@@ -61,6 +61,16 @@ export class Map extends react.Component<MapProps, MapState>{
                 return false;
             }
         }
+        
+        //if computer should start, make it play
+        console.log("updated");
+        if ("string" !== typeof this.props.players[this.props.playersForMoves[this.state.move]]) {
+            console.log("in");
+            if (!this.AITurn() && this.props.callback) {
+                console.log("callback");
+                return this.props.callback(1-this.props.playersForMoves[this.state.move]);
+            }
+        }
     }
     
     shouldComponentUpdate(nextProps: MapProps, nextState: MapState) {
@@ -79,9 +89,15 @@ export class Map extends react.Component<MapProps, MapState>{
         if (this.state.move !== prevState.move) {
             let isEnd = !this.doesAnyMoveExist();
             this.setState({finished: isEnd});
-            //and if the loopback is set to a function, we will return who won (winner's index in PlayersForMove)
-            if (isEnd && this.props.loopback) {
-                this.props.loopback(this.props.playersForMoves[this.state.move-1])
+            //and if the callback is set to a function, we will return who won (winner's index in PlayersForMove)
+            if (isEnd && this.props.callback) {
+                this.props.callback(this.props.playersForMoves[this.state.move-1])
+            }
+            console.log("updated");
+            if ("string" !== typeof this.props.players[this.props.playersForMoves[this.state.move]]) {
+                if (this.AITurn() && this.props.callback) {
+                    return this.props.callback(1-this.props.playersForMoves[this.state.move-1]);
+                }
             }
         }
     }
@@ -91,30 +107,42 @@ export class Map extends react.Component<MapProps, MapState>{
     * AI turn
     */
     AITurn = () => {
+        console.log("AI");
+        console.log(this.props);
+        console.log(this.state);
+        
+        console.log(this.props.moveOrder[this.state.move])
+        console.log(this.props.moveOrder[this.state.move+1])
+        
         if ("string" === typeof this.props.players[this.props.playersForMoves[this.state.move]]) {
             return false;
         }
         let move = (this.props.players[this.props.playersForMoves[this.state.move]] as Player).makeMove(
             this.props.pieces.map(piece => this.getPieceState(piece))
         );
+        
+        
+        console.log("AI made a move");
         if (!this.checkIfMoveIsLegal(this.props.moveOrder[this.state.move][0], move[0])) {
-          return false;
+            console.log("it's ilegal!");
+            return false;
         }
         this.setPieceState(this.props.moveOrder[this.state.move][0], move[0]);
         this.forceUpdate();
         this.setState({move: (this.state.move + 1) % this.props.moveOrder.length});
         
-        if (!this.checkIfMoveIsLegal(this.props.moveOrder[this.state.move][move[2]], move[1])) {
+        if (!this.checkIfMoveIsLegal(this.props.moveOrder[(this.state.move + 1) % this.props.moveOrder.length][move[2]], move[1])) {
           return false;
         }
         
-        this.setPieceState(this.props.moveOrder[this.state.move][move[2]], move[1]);
+        this.setPieceState(this.props.moveOrder[(this.state.move + 1) % this.props.moveOrder.length][move[2]], move[1]);
         this.forceUpdate();
-        this.setState({move: (this.state.move + 1) % this.props.moveOrder.length});;
+        this.setState({move: (this.state.move + 2) % this.props.moveOrder.length});;
         return true;
     }
     
     checkIfMoveIsLegal = (piece: Piece, state: number) => {
+        console.log(piece);
         let testPiece = this.setPieceState(this.makePieceFromData(this.getPieceData(piece)), state);
         for (let part of testPiece.show()) {
             //is inside the field?
@@ -429,7 +457,7 @@ export class Map extends react.Component<MapProps, MapState>{
                 </div>
                 
                 <div className="row">
-                    <div className="col alert alert-primary">It's {this.props.players[this.props.playersForMoves[this.state.move]]}'s move</div>
+                    <div className="col alert alert-primary">It's {"string" === typeof this.props.players[this.props.playersForMoves[this.state.move]]? this.props.players[this.props.playersForMoves[this.state.move]]: "AI"}'s move</div>
                     <div className="col alert alert-primary">You should move a {this.props.moveOrder[this.state.move][0].plaincolor} piece</div>
                 </div>
                 
