@@ -1,0 +1,17 @@
+<ul>
+    <li>
+        selecting a piece:
+        <ol>
+            <li>A piece is selected (td.onClick triggers).</li>
+            <li>map.setActive triggers</li>
+            <li>If selection is valid, map.active is changed to selected piece</li>
+        </ol>
+    </li>
+    <li>When moving cursor (td.onMouseOver triggers), map.moveActive triggers</li>
+    <li>If active piece should be rotated, this.rotateActive triggers</li>
+    <li>If active piece should be mirrored, this.mirrorActive triggers</li>
+    <li>map.cancelTheMove returns active piece to its position before it was picked up</li>
+    <li>map.passMove passes a move (e.i. it increases move by 1), if the move can be skipped (is not mandatory)</li>
+    <li>map.doesAnyMoveExist (and it's helper map.doesAnyMoveExistHelper) returns true if any move can be played in current position (is used for detecting end of the game) - they bruteforce all possible moves</li>
+    
+</ul>
