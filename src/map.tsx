@@ -1,7 +1,7 @@
 import react from 'react';
 
 import { Piece } from './piece';
-
+import { Player } from './types';
 
 const limits: number[] = [2,5];
 const size = 8;
@@ -11,8 +11,9 @@ interface MapProps {
     pieces: Piece[];
     moveOrder: Piece[][];
     mandatoryMoves: number[];
-    players: {[index:number]: string};
+    players: {[index:number]: string|Player};
     playersForMoves: number[];
+    loopback?: (map:Map)=>void;
 }
 
 
@@ -41,6 +42,9 @@ export class Map extends react.Component<MapProps, MapState>{
     constructor(props: MapProps) {
         super(props);
         this.state = {active: null, error: false, errorMessage: null, move: 0, initialPieceState: null, finished: false};
+        if (props.loopback) {
+            props.loopback(this);
+        }
     }
     
     componentDidMount() {
@@ -106,8 +110,10 @@ export class Map extends react.Component<MapProps, MapState>{
         let pos = piece.getPosition();
         let rot = piece.getRotation();
         
-        let x = size**0 * pos[0] + size**1 * pos[1] + size**2 * ( 2**0 * (rot[0]+1)/2 + 2**1 * (rot[1]+1)/2 + 2**2 * (rot[2]+1)/2);
-        //console.log(x);
+        //position can't be ever smaller than limits[0] nor bigger than limits[1]
+        //therefore position can be modified to pos - limits[0]
+        let x = (limits[1]-limits[0]+1)**0 * (pos[0] - limits[0]) + (limits[1]-limits[0]+1)**1 * (pos[1] - limits[0]) + (limits[1]-limits[0]+1)**2 * ( 2**0 * (rot[0]+1)/2 + 2**1 * (rot[1]+1)/2 + 2**2 * (rot[2]+1)/2);
+        
         return x;
     }
     
@@ -120,8 +126,8 @@ export class Map extends react.Component<MapProps, MapState>{
         
         //first we decode position
         for (let i = 0; i < 2; i++) {
-            data[0].push(x % size);
-            x = (x - data[0][i])/ size;
+            data[0].push(x % (limits[1]-limits[0]+1) + limits[0]);
+            x = (x - data[0][i])/ (limits[1]-limits[0]+1);
         }
         
         //and now the rotation
@@ -424,12 +430,12 @@ export class Map extends react.Component<MapProps, MapState>{
                         {table.map((row, idx) => <tr key={idx}>{row}</tr>)}
                     </tbody>
                 </table>
-                <div className="btn-group row">
-                    <button className="col btn btn-primary" disabled={!this.state.active} onClick={() => this.rotateActive(true)}>rotate clockwise</button>
-                    <button className="col btn btn-primary" disabled={!this.state.active} onClick={() => this.rotateActive(false)}>rotate counterclockwise</button>
-                    <button className="col btn btn-primary" disabled={!this.state.active} onClick={() => this.mirrorActive()}> rotate </button>
-                    <button className="col btn btn-primary" onClick={this.passMove}>pass a move</button>
-                    <button className="col btn btn-primary" onClick={()=>this.cancelTheMove()}> cancel picing a piece</button>
+                <div className="btn-group w-100">
+                    <button className="btn btn-primary" disabled={!this.state.active} onClick={() => this.rotateActive(true)}>rotate clockwise</button>
+                    <button className="btn btn-primary" disabled={!this.state.active} onClick={() => this.rotateActive(false)}>rotate counterclockwise</button>
+                    <button className="btn btn-primary" disabled={!this.state.active} onClick={() => this.mirrorActive()}> rotate </button>
+                    <button className="btn btn-primary" onClick={this.passMove}>pass a move</button>
+                    <button className="btn btn-primary" onClick={()=>this.cancelTheMove()}> cancel picing a piece</button>
                 </div>
             </div>
         );

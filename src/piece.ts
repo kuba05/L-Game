@@ -1,5 +1,3 @@
-
-
 export class Piece {
     position: number[];
     rotation: number[];
