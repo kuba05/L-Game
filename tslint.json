@@ -1,0 +1,3 @@
+{
+  "triple-slash-reference": { "path": "always", "types": "always", "lib": "always" }
+}

@@ -16,9 +16,11 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "npm run ts-standard",
     "eject": "react-scripts eject",
-    "update-locks": "npm i --package-lock-only; pnpm i --lockfile-only"
+    "ts-standard": "./node_modules/ts-standard/bin/cmd.js",
+    "update-locks": "npm i --package-lock-only; pnpm i --lockfile-only",
+    "autofix": "npm run ts-standard -- --autofix"
   },
   "eslintConfig": {
     "extends": [
@@ -36,5 +38,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "standard.engine": "ts-standard",
+  "devDependencies": {
+    "ts-standard": "^10.0.0"
   }
 }
