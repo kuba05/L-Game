@@ -10,17 +10,15 @@
     "react-dom": "^17.0.2",
     "react-scripts": "4.0.3",
     "sass": "^1.34.1",
-    "ts-loader": "^9.2.2",
-    "typescript": "^4.3.2"
+    "ts-loader": "^9.2.2"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "npm run ts-standard",
+    "test": "./node_modules/.bin/eslint .",
     "eject": "react-scripts eject",
-    "ts-standard": "./node_modules/ts-standard/bin/cmd.js",
     "update-locks": "npm i --package-lock-only; pnpm i --lockfile-only",
-    "autofix": "npm run ts-standard -- --autofix"
+    "autofix": "./node_modules/.bin/eslint . --fix"
   },
   "eslintConfig": {
     "extends": [
@@ -41,6 +39,14 @@
   },
   "standard.engine": "ts-standard",
   "devDependencies": {
-    "ts-standard": "^10.0.0"
+    "@typescript-eslint/eslint-plugin": "^4.26.1",
+    "@typescript-eslint/parser": "^4.26.1",
+    "eslint": "^7.28.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-standard-with-typescript": "^20.0.0",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "typescript": "^4.3.2"
   }
 }
