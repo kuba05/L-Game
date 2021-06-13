@@ -1,6 +1,6 @@
 import react from 'react';
 
-import { Piece } from './piece';
+import { Piece } from './Piece';
 import { Player } from './types';
 
 const limits: number[] = [2,5];

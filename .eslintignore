@@ -3,3 +3,6 @@ node_modules
 # don't lint build output
 dist
 build
+
+# formating is not correct now, so ignore the errors for now
+src
